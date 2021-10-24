@@ -144,6 +144,48 @@ def submit_async(calendar_url, msg, q, timeout):
     t.start()
 
 
+def opreturn_command(args):
+    # Create an initial commitment op for the data
+    if args.utf8:
+        data = bytes(args.utf8, 'utf-8')
+    elif args.hex:
+        data = bytes.fromhex(args.hex)
+    else:
+        data = sys.stdin.buffer.read()
+
+    proxy = args.setup_bitcoin()
+
+    unfunded_tx = CTransaction([], [CTxOut(0, CScript([OP_RETURN, data]))])
+    r = proxy.fundrawtransaction(unfunded_tx)  # FIXME: handle errors
+    funded_tx = r['tx']
+
+    r = proxy.signrawtransaction(funded_tx)
+    assert r['complete']
+    signed_tx = r['tx']
+
+    txid = proxy.sendrawtransaction(signed_tx)
+    logging.info('Sent timestamp tx')
+
+    blockhash = None
+    while blockhash is None:
+        logging.info('Waiting for timestamp tx %s to confirm...' % b2lx(txid))
+        time.sleep(1)
+
+        r = proxy.gettransaction(txid)
+
+        if 'blockhash' in r:
+            # FIXME: this will break when python-bitcoinlib adds RPC
+            # support for gettransaction, due to formatting differences
+            blockhash = lx(r['blockhash'])
+
+    logging.info('Confirmed by block %s' % b2lx(blockhash))
+
+    #block = proxy.getblock(blockhash)
+
+    #r = proxy.getblockheader(blockhash, True)
+    #blockheight = r['height']
+
+
 def stamp_command(args):
     # Create initial commitment ops for all files
     file_timestamps = []

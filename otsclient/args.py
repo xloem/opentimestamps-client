@@ -158,6 +158,17 @@ def parse_ots_args(raw_args):
     subparsers = parser.add_subparsers(title='Subcommands',
                                        description='All operations are done through subcommands:')
 
+    # ----- opreturn -----
+    parser_opreturn = subparsers.add_parser('opreturn', aliases=['o'],
+                                         help='OP_RETURN publishing')
+
+
+    opreturn_data_group = parser_opreturn.add_mutually_exclusive_group()
+    opreturn_data_group.add_argument('-8', '--utf8', type=str,
+                                     help='utf8 OP_RETURN data')
+    opreturn_data_group.add_argument('-x', '--hex', type=str,
+                                     help='hex OP_RETURN data')
+
     # ----- stamp -----
     parser_stamp = subparsers.add_parser('stamp', aliases=['s'],
                                          help='Timestamp files')
@@ -235,6 +246,7 @@ def parse_ots_args(raw_args):
                               help='Existing timestamp; moved to TIMESTAMP.bak')
 
 
+    parser_opreturn.set_defaults(cmd_func=otsclient.cmds.opreturn_command)
     parser_stamp.set_defaults(cmd_func=otsclient.cmds.stamp_command)
     parser_upgrade.set_defaults(cmd_func=otsclient.cmds.upgrade_command)
     parser_verify.set_defaults(cmd_func=otsclient.cmds.verify_command)
